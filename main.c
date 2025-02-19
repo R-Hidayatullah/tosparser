@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include "ipf.h"
 
 int main(void) // Explicitly declare main() with void
 {

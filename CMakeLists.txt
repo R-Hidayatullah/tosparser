@@ -21,3 +21,8 @@ set(CMAKE_EXE_LINKER_FLAGS "-static")
 
 # Add executable
 add_executable(tosparser main.c)
+
+target_link_libraries(
+    tosparser
+    z
+)
