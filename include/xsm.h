@@ -256,4 +256,12 @@ typedef struct
     //     uint8_t compressed_scale_data[compressed_scale_num_bytes]
 } XSM_WaveletChunk;
 
+typedef struct
+{
+    XSM_SkeletalSubMotion xsm_skeletal_submotion;
+    XSM_Info xsm_info;
+    XSM_SubMotions xsm_submotions;
+    XSM_WaveletInfo xsm_wavelet_info;
+} XSM_Root;
+
 #endif // XSM_H

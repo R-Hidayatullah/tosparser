@@ -121,6 +121,19 @@ extern "C"
         IPF_FileTable *ipf_file_table; // Pointer to the dynamically allocated file table
     } IPF_Root;
 
+    void free_ipf_file_table(IPF_FileTable *file_table, uint16_t file_count);
+    int load_ipf(IPF_Root *ipf_root, FILE *file);
+    void print_ipf_details(const IPF_Root *ipf_root);
+    uint32_t compute_crc32(uint32_t crc, uint8_t b);
+    uint8_t extract_byte(uint32_t value, int byte_index);
+    void keys_update(uint32_t keys[3], uint8_t b);
+    void keys_generate(uint32_t keys[3]);
+    void ipf_decrypt(uint8_t *buffer, size_t size);
+    void ipf_encrypt(uint8_t *buffer, size_t size);
+    bool extract_data(FILE *ipf_file, IPF_FileTable *file_entry, uint8_t **output_data, size_t *output_size);
+    void print_hex_dump(const uint8_t *data, size_t bytes_per_row, size_t row_size);
+    int test_parsing_ipf(void);
+
     /**
      * Frees allocated memory for IPF file table.
      *
@@ -260,15 +273,32 @@ extern "C"
         printf("File Count: %u\n", ipf_root->ipf_footer.file_count);
         printf("File Table Pointer: 0x%X\n\n", ipf_root->ipf_footer.file_table_pointer);
 
-        for (uint16_t i = 0; i < 3; i++)
+        // int index = 0;
+        // while (index < ipf_root->ipf_footer.file_count)
+        // {
+        //     if (strstr(ipf_root->ipf_file_table[index].directory_name, ".xpm") != NULL)
+        //     {
+        //         printf("File %d:\n", index + 1);
+        //         printf("  CRC32: 0x%X\n", ipf_root->ipf_file_table[index].metadata.crc32);
+        //         printf("  Compressed Size: %u bytes\n", ipf_root->ipf_file_table[index].metadata.file_size_compressed);
+        //         printf("  Uncompressed Size: %u bytes\n", ipf_root->ipf_file_table[index].metadata.file_size_uncompressed);
+        //         printf("  File Pointer: 0x%X\n", ipf_root->ipf_file_table[index].metadata.file_pointer);
+        //         printf("  Container Name: %s\n", ipf_root->ipf_file_table[index].container_name);
+        //         printf("  Directory Name: %s\n\n", ipf_root->ipf_file_table[index].directory_name);
+        //         break;
+        //     }
+        //     index++;
+        // }
+
+        for (int index = 0; index < 1; index++)
         {
-            printf("File %d:\n", i + 1);
-            printf("  CRC32: 0x%X\n", ipf_root->ipf_file_table[i].metadata.crc32);
-            printf("  Compressed Size: %u bytes\n", ipf_root->ipf_file_table[i].metadata.file_size_compressed);
-            printf("  Uncompressed Size: %u bytes\n", ipf_root->ipf_file_table[i].metadata.file_size_uncompressed);
-            printf("  File Pointer: 0x%X\n", ipf_root->ipf_file_table[i].metadata.file_pointer);
-            printf("  Container Name: %s\n", ipf_root->ipf_file_table[i].container_name);
-            printf("  Directory Name: %s\n\n", ipf_root->ipf_file_table[i].directory_name);
+            printf("File %d:\n", index + 1);
+            printf("  CRC32: 0x%X\n", ipf_root->ipf_file_table[index].metadata.crc32);
+            printf("  Compressed Size: %u bytes\n", ipf_root->ipf_file_table[index].metadata.file_size_compressed);
+            printf("  Uncompressed Size: %u bytes\n", ipf_root->ipf_file_table[index].metadata.file_size_uncompressed);
+            printf("  File Pointer: 0x%X\n", ipf_root->ipf_file_table[index].metadata.file_pointer);
+            printf("  Container Name: %s\n", ipf_root->ipf_file_table[index].container_name);
+            printf("  Directory Name: %s\n\n", ipf_root->ipf_file_table[index].directory_name);
         }
     }
 
@@ -525,6 +555,93 @@ extern "C"
             printf("%c", isprint(data[j]) ? data[j] : '.');
         }
         printf(" |\n");
+    }
+
+    /**
+     * Test function to load and print IPF data.
+     *
+     * This function:
+     * 1. Opens the specified IPF file.
+     * 2. Loads the IPF archive into memory.
+     * 3. Prints the IPF file details.
+     * 4. Extracts the first file (if available) and displays a hex dump.
+     * 5. Cleans up allocated resources before exiting.
+     *
+     * @return EXIT_SUCCESS on success, EXIT_FAILURE on error.
+     */
+    int test_parsing_ipf(void)
+    {
+        const char *filename = "/home/ridwan/Documents/TreeOfSaviorCN/data/char_hi.ipf"; // Name of the IPF file to be loaded
+
+        // Open the IPF file in binary mode
+        FILE *ipf_file = fopen(filename, "rb");
+        if (!ipf_file)
+        {
+            perror("Failed to open file"); // Print error message if the file can't be opened
+            return EXIT_FAILURE;
+        }
+
+        IPF_Root ipf_root = {0}; // Initialize IPF_Root structure to zero
+
+        // Attempt to load the IPF file
+        if (!load_ipf(&ipf_root, ipf_file))
+        {
+            fprintf(stderr, "Error: Failed to load IPF file.\n");
+            fclose(ipf_file);
+            return EXIT_FAILURE;
+        }
+
+        // Print details about the loaded IPF file
+        print_ipf_details(&ipf_root);
+
+        // Ensure there is at least one file before accessing ipf_file_table[0]
+        if (ipf_root.ipf_footer.file_count == 0 || ipf_root.ipf_file_table == NULL)
+        {
+            fprintf(stderr, "Error: No files found in the IPF archive.\n");
+            free_ipf_file_table(ipf_root.ipf_file_table, ipf_root.ipf_footer.file_count);
+            fclose(ipf_file);
+            return EXIT_FAILURE;
+        }
+
+        // Variables for extracted data
+        uint8_t *extracted_data = NULL;
+        size_t extracted_size = 0;
+
+        // Attempt to extract the first file from the archive
+        if (extract_data(ipf_file, &ipf_root.ipf_file_table[0], &extracted_data, &extracted_size))
+        {
+            if (extracted_data) // Ensure extracted_data is valid before using it
+            {
+                printf("Extraction successful.\n");
+
+                // Print a hex dump of the first 16 bytes of the extracted file
+                print_hex_dump(extracted_data, 16, 4);
+
+                free(extracted_data); // Free extracted data memory after use
+            }
+            else
+            {
+                fprintf(stderr, "Error: Extracted data is NULL.\n");
+            }
+        }
+        else
+        {
+            fprintf(stderr, "Error: Extraction failed.\n");
+        }
+
+        // Free allocated memory for the IPF file table
+        if (ipf_root.ipf_file_table)
+        {
+            free_ipf_file_table(ipf_root.ipf_file_table, ipf_root.ipf_footer.file_count);
+        }
+
+        // Close the file safely
+        if (ipf_file)
+        {
+            fclose(ipf_file);
+        }
+
+        return EXIT_SUCCESS; // Indicate successful execution
     }
 
 #ifdef __cplusplus
