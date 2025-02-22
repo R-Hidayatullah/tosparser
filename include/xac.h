@@ -777,6 +777,8 @@ typedef struct
 typedef struct
 {
     XAC_Header header;
+    uint32_t chunk_data_size;
+    ChunkData chunk_data[16];
 
     union
     {
@@ -1231,70 +1233,167 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
         switch ((XacChunkType)chunk_data.chunk_id)
         {
         case XAC_CHUNK_NODE:
+        {
             if (parse_xac_node(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_INFO:
+        {
             if (parse_xac_info(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_MESH:
+        {
             if (parse_xac_mesh(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_NODES:
+        {
             if (parse_xac_nodes(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_NODE_GROUPS:
+        {
             if (parse_xac_node_groups(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_SKINNING_INFO:
+        {
             if (parse_xac_skinning_info(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_MESH_LOD_LEVEL:
+        {
             if (parse_xac_mesh_lod_level(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_STD_MORPH_TARGET:
+        {
             if (parse_xac_std_morph_target(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_STD_MORPH_TARGETS:
+        {
             if (parse_xac_std_morph_targets(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_STANDARD_MATERIAL:
+        {
             if (parse_xac_standard_material(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_STANDARD_MATERIAL_LAYER:
+        {
             if (parse_xac_standard_material_layer(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_FX_MATERIAL:
+        {
             if (parse_xac_fx_material(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_LIMIT:
+        {
             if (parse_xac_limit(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_MATERIAL_INFO:
+        {
             if (parse_xac_material_info(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_NODE_MOTION_SOURCES:
+        {
             if (parse_xac_node_motion_sources(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         case XAC_CHUNK_ATTACHMENT_NODES:
+        {
             if (parse_xac_attachment_nodes(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
                 return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
+        }
         default:
+        {
             printf("Skipping unknown chunk type: %u\n", chunk_data.chunk_id);
             if (skip_buffer(&buffer, chunk_data.size_in_bytes, buffer_end) != chunk_data.size_in_bytes)
             {
@@ -1302,6 +1401,7 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
                 return -1;
             }
             break;
+        }
         }
 
         if (buffer != after_chunk)
@@ -1312,6 +1412,7 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
         }
     }
 
+    printf("Chunk data size : %d\n", root->chunk_data_size);
     return 0;
 }
 
