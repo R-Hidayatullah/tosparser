@@ -9,8 +9,20 @@ typedef enum
     XPM_CHUNK_INFO = 101,
     XPM_CHUNK_MOTIONEVENTTABLE = SHARED_CHUNK_MOTIONEVENTTABLE,
     XPM_CHUNK_SUBMOTIONS = 102,
-    XPM_FORCE_32BIT = 0xFFFFFFFF
+    XPM_FORCE_32BIT = (int)0xFFFFFFFF
 } XPM_ChunkType;
+
+typedef struct
+{
+    float time;  // the time, in seconds
+    float value; // the value
+} XPM_FloatKey;
+
+typedef struct
+{
+    float time;     // the time in seconds
+    uint16_t value; // the value
+} XPM_UnsignedShortKey;
 
 typedef struct
 {
@@ -27,11 +39,10 @@ typedef struct
     uint8_t exporter_high_version;
     uint8_t exporter_low_version;
 
-    // followed by:
-    // string : source application (e.g. "3D Studio MAX 7", "Maya 6.5")
-    // string : original filename of the 3DSMAX/Maya file
-    // string : compilation date of the exporter
-    // string : the name of the motion
+    char *source_application; // pointer to string: source application (e.g. "3D Studio MAX 7", "Maya 6.5")
+    char *original_filename;  // pointer to string: original filename of the 3DSMAX/Maya file
+    char *compilation_date;   // pointer to string: compilation date of the exporter
+    char *motion_name;        // pointer to string: the name of the motion
 } XPM_Info;
 
 typedef struct
@@ -42,28 +53,22 @@ typedef struct
     uint32_t phoneme_set; // the phoneme set of the submotion, 0 if this is a normal progressive morph target submotion
     uint32_t num_keys;    // number of keyframes to follow
 
-    // followed by:
-    // string : name (the name of this motion part)
-    // XPM_UnsignedShortKey[num_keys]
+    char *name; // pointer to string: name (the name of this motion part)
+
+    XPM_UnsignedShortKey *keys; // pointer to array of XPM_UnsignedShortKey[num_keys]
 } XPM_ProgressiveSubMotion;
 
 typedef struct
 {
-    float time;  // the time, in seconds
-    float value; // the value
-} XPM_FloatKey;
+    uint32_t num_sub_motions; // number of sub-motions to follow
 
-typedef struct
-{
-    float time;     // the time in seconds
-    uint16_t value; // the value
-} XPM_UnsignedShortKey;
-
-typedef struct
-{
-    uint32_t num_sub_motions;
-    // followed by:
-    // XPM_ProgressiveSubMotion[num_sub_motions]
+    XPM_ProgressiveSubMotion *sub_motions; // pointer to array of XPM_ProgressiveSubMotion[num_sub_motions]
 } XPM_SubMotions;
+
+typedef struct
+{
+    XPM_Header xpm_header;
+    XPM_SubMotions xpm_submotions;
+} XPM_Root;
 
 #endif // XPM_H

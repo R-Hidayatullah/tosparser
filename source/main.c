@@ -1,4 +1,8 @@
+#include "ipf.h"
+#include "xac.h"
 #include "xsm.h"
+#include "xpm.h"
+#include "hashmap.h"
 
 // Example usage
 int main(void)
