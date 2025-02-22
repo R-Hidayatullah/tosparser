@@ -1,4 +1,5 @@
 #include "ipf.h"
+#include "hashmap.h"
 
 /**
  * Main function to load and print IPF data.
