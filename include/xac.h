@@ -95,7 +95,7 @@ typedef enum
     ROTATION_SCALE_TRANSLATION = 1  /**< LocalTM = rotation * scale * translation (3DSMax style) [default]. */
 } XacMultiplicationOrder;
 
-#pragma pack(push, 1) // Save current packing and set new alignment
+// #pragma pack(push, 1) // Save current packing and set new alignment
 
 typedef struct
 {
@@ -191,7 +191,11 @@ typedef struct
     uint32_t repositioning_node_idx;
     uint8_t exporter_high_version;
     uint8_t exporter_low_version;
+} XAC_InfoMetadata;
 
+typedef struct
+{
+    XAC_InfoMetadata xac_info_metadata;
     // followed by:
     // string : source application (e.g. "3D Studio MAX 8", "Maya 7.0")
     // string : original filename of the 3dsMax/Maya file
@@ -210,6 +214,11 @@ typedef struct
     uint8_t exporter_high_version;
     uint8_t exporter_low_version;
     float retarget_root_offset;
+} XAC_InfoV2Metadata;
+
+typedef struct
+{
+    XAC_InfoV2Metadata xac_info_metadata;
 
     // followed by:
     // string : source application (e.g. "3D Studio MAX 8", "Maya 7.0")
@@ -230,6 +239,11 @@ typedef struct
     uint8_t exporter_high_version;
     uint8_t exporter_low_version;
     float retarget_root_offset;
+} XAC_InfoV3Metadata;
+
+typedef struct
+{
+    XAC_InfoV3Metadata xac_info_metadata;
 
     // followed by:
     // string : source application (e.g. "3D Studio MAX 8", "Maya 7.0")
@@ -250,6 +264,11 @@ typedef struct
     uint8_t exporter_high_version;
     uint8_t exporter_low_version;
     float retarget_root_offset;
+} XAC_InfoV4Metadata;
+
+typedef struct
+{
+    XAC_InfoV4Metadata xac_info_metadata;
 
     // followed by:
     // string : source application (e.g. "3D Studio MAX 8", "Maya 7.0")
@@ -753,7 +772,7 @@ typedef struct
     uint16_t *attachment_indices; // Pointer to array of uint16_t[num_nodes], index per attachment node.
 } XAC_AttachmentNodes;
 
-#pragma pack(pop) // Restore previous packing alignment
+// #pragma pack(pop) // Restore previous packing alignment
 
 typedef struct
 {
@@ -874,7 +893,7 @@ int parse_xac_attachment_nodes(XAC_Root *root, const uint8_t **buffer, const Chu
 
 size_t skip_buffer(const uint8_t **buffer, size_t size, const uint8_t *buffer_end);
 size_t read_from_buffer(const uint8_t **buffer, void *dest, size_t size, const uint8_t *buffer_end);
-char *read_string(const uint8_t **buffer, const uint8_t *buffer_end);
+int read_string(const uint8_t **buffer, const uint8_t *buffer_end, char **result_text);
 int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size);
 
 size_t skip_buffer(const uint8_t **buffer, size_t size, const uint8_t *buffer_end)
@@ -901,11 +920,11 @@ size_t read_from_buffer(const uint8_t **buffer, void *dest, size_t size, const u
     return size;
 }
 
-char *read_string(const uint8_t **buffer, const uint8_t *buffer_end)
+int read_string(const uint8_t **buffer, const uint8_t *buffer_end, char **result_text)
 {
     if (*buffer + sizeof(uint32_t) > buffer_end)
     {
-        return NULL; // Prevent buffer overflow
+        return EXIT_FAILURE; // Prevent buffer overflow
     }
 
     // Read string length (ensure correct endianness if necessary)
@@ -914,25 +933,25 @@ char *read_string(const uint8_t **buffer, const uint8_t *buffer_end)
     *buffer += sizeof(uint32_t); // Move past the length field
 
     // Validate length
-    if (length == 0 || *buffer + length > buffer_end)
+    if (length == 0 || *buffer + length > buffer_end || length > 1024 * 1024) // Limiting size to 1MB
     {
-        return NULL; // Prevent buffer overflow or invalid length
+        return EXIT_FAILURE; // Prevent buffer overflow or invalid length
     }
 
     // Allocate memory for the string (+1 for null terminator)
-    char *str = (char *)malloc(length + 1);
-    if (!str)
+    *result_text = (char *)malloc(length + 1);
+    if (!*result_text)
     {
-        return NULL; // Memory allocation failure
+        return EXIT_FAILURE; // Memory allocation failure
     }
 
     // Copy string data
-    memcpy(str, *buffer, length);
-    str[length] = '\0'; // Null-terminate the string
+    memcpy(*result_text, *buffer, length);
+    (*result_text)[length] = '\0'; // Null-terminate the string
 
     *buffer += length; // Move past the string data
 
-    return str;
+    return EXIT_SUCCESS;
 }
 
 int parse_xac_node(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end, uint32_t version)
@@ -957,80 +976,68 @@ int parse_xac_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chun
     switch (version)
     {
     case 1:
-        read_from_buffer(buffer, &root->xac_info.version_1, sizeof(XAC_Info), buffer_end);
-        root->xac_info.version_1.source_application = read_string(buffer, buffer_end);
-        root->xac_info.version_1.original_filename = read_string(buffer, buffer_end);
-        root->xac_info.version_1.export_date = read_string(buffer, buffer_end);
-        root->xac_info.version_1.actor_name = read_string(buffer, buffer_end);
+        read_from_buffer(buffer, &root->xac_info.version_1.xac_info_metadata, sizeof(XAC_InfoMetadata), buffer_end);
+        skip_buffer(buffer, 2, buffer_end);
+
+        read_string(buffer, buffer_end, &root->xac_info.version_1.source_application);
+        read_string(buffer, buffer_end, &root->xac_info.version_1.original_filename);
+        read_string(buffer, buffer_end, &root->xac_info.version_1.export_date);
+        read_string(buffer, buffer_end, &root->xac_info.version_1.actor_name);
 
         printf("\nXAC_Info (v1):\n");
-        printf("  repositioning_mask: %u\n", root->xac_info.version_1.repositioning_mask);
-        printf("  repositioning_node_idx: %u\n", root->xac_info.version_1.repositioning_node_idx);
-        printf("  exporter version: %u.%u\n", root->xac_info.version_1.exporter_high_version, root->xac_info.version_1.exporter_low_version);
+        printf("  repositioning_mask: %u\n", root->xac_info.version_1.xac_info_metadata.repositioning_mask);
+        printf("  repositioning_node_idx: %u\n", root->xac_info.version_1.xac_info_metadata.repositioning_node_idx);
+        printf("  exporter version: %u.%u\n", root->xac_info.version_1.xac_info_metadata.exporter_high_version, root->xac_info.version_1.xac_info_metadata.exporter_low_version);
         break;
 
     case 2:
-        read_from_buffer(buffer, &root->xac_info.version_2.repositioning_mask, sizeof(root->xac_info.version_2.repositioning_mask), buffer_end);
-        read_from_buffer(buffer, &root->xac_info.version_2.repositioning_node_idx, sizeof(root->xac_info.version_2.repositioning_node_idx), buffer_end);
-        read_from_buffer(buffer, &root->xac_info.version_2.exporter_high_version, sizeof(root->xac_info.version_2.exporter_high_version), buffer_end);
-        read_from_buffer(buffer, &root->xac_info.version_2.exporter_low_version, sizeof(root->xac_info.version_2.exporter_low_version), buffer_end);
-        // read_from_buffer(buffer, &root->xac_info.version_2.retarget_root_offset, sizeof(root->xac_info.version_2.retarget_root_offset), buffer_end);
+        read_from_buffer(buffer, &root->xac_info.version_2.xac_info_metadata, sizeof(XAC_InfoV2Metadata), buffer_end);
+        // skip_buffer(buffer, 2, buffer_end);
 
-        uint32_t raw_float;
-        if (read_from_buffer(buffer, &raw_float, sizeof(uint32_t), buffer_end) == 0)
-        {
-            printf("Error: Failed to read float\n");
-        }
-        memcpy(&root->xac_info.version_2.retarget_root_offset, &raw_float, sizeof(float));
-        printf("Raw bytes for float: %02X %02X %02X %02X\n",
-               ((uint8_t *)&raw_float)[0], ((uint8_t *)&raw_float)[1],
-               ((uint8_t *)&raw_float)[2], ((uint8_t *)&raw_float)[3]);
-
-        float value;
-        uint32_t raw = 0x3B2E0000;
-        memcpy(&value, &raw, sizeof(float));
-        printf("Converted float: %f\n", value);
-
-        root->xac_info.version_2.source_application = read_string(buffer, buffer_end);
-        root->xac_info.version_2.original_filename = read_string(buffer, buffer_end);
-        root->xac_info.version_2.export_date = read_string(buffer, buffer_end);
-        root->xac_info.version_2.actor_name = read_string(buffer, buffer_end);
+        read_string(buffer, buffer_end, &root->xac_info.version_2.source_application);
+        read_string(buffer, buffer_end, &root->xac_info.version_2.original_filename);
+        read_string(buffer, buffer_end, &root->xac_info.version_2.export_date);
+        read_string(buffer, buffer_end, &root->xac_info.version_2.actor_name);
 
         printf("\nXAC_Info (v2):\n");
-        printf("  repositioning_mask: %u\n", root->xac_info.version_2.repositioning_mask);
-        printf("  repositioning_node_idx: %u\n", root->xac_info.version_2.repositioning_node_idx);
-        printf("  exporter version: %u.%u\n", root->xac_info.version_2.exporter_high_version, root->xac_info.version_2.exporter_low_version);
-        printf("  retarget_root_offset: %f\n", root->xac_info.version_2.retarget_root_offset);
+        printf("  repositioning_mask: %u\n", root->xac_info.version_2.xac_info_metadata.repositioning_mask);
+        printf("  repositioning_node_idx: %u\n", root->xac_info.version_2.xac_info_metadata.repositioning_node_idx);
+        printf("  exporter version: %u.%u\n", root->xac_info.version_2.xac_info_metadata.exporter_high_version, root->xac_info.version_2.xac_info_metadata.exporter_low_version);
+        printf("  retarget_root_offset: %f\n", root->xac_info.version_2.xac_info_metadata.retarget_root_offset);
         break;
 
     case 3:
-        read_from_buffer(buffer, &root->xac_info.version_3, sizeof(XAC_InfoV3), buffer_end);
-        root->xac_info.version_3.source_application = read_string(buffer, buffer_end);
-        root->xac_info.version_3.original_filename = read_string(buffer, buffer_end);
-        root->xac_info.version_3.export_date = read_string(buffer, buffer_end);
-        root->xac_info.version_3.actor_name = read_string(buffer, buffer_end);
+        read_from_buffer(buffer, &root->xac_info.version_3, sizeof(XAC_InfoV3Metadata), buffer_end);
+        skip_buffer(buffer, 2, buffer_end);
+
+        read_string(buffer, buffer_end, &root->xac_info.version_3.source_application);
+        read_string(buffer, buffer_end, &root->xac_info.version_3.original_filename);
+        read_string(buffer, buffer_end, &root->xac_info.version_3.export_date);
+        read_string(buffer, buffer_end, &root->xac_info.version_3.actor_name);
 
         printf("\nXAC_Info (v3):\n");
-        printf("  trajectory_node_idx: %u\n", root->xac_info.version_3.trajectory_node_idx);
-        printf("  motion_extraction_idx: %u\n", root->xac_info.version_3.motion_extraction_idx);
-        printf("  motion_extraction_mask: %u\n", root->xac_info.version_3.motion_extraction_mask);
-        printf("  exporter version: %u.%u\n", root->xac_info.version_3.exporter_high_version, root->xac_info.version_3.exporter_low_version);
-        printf("  retarget_root_offset: %f\n", root->xac_info.version_3.retarget_root_offset);
+        printf("  trajectory_node_idx: %u\n", root->xac_info.version_3.xac_info_metadata.trajectory_node_idx);
+        printf("  motion_extraction_idx: %u\n", root->xac_info.version_3.xac_info_metadata.motion_extraction_idx);
+        printf("  motion_extraction_mask: %u\n", root->xac_info.version_3.xac_info_metadata.motion_extraction_mask);
+        printf("  exporter version: %u.%u\n", root->xac_info.version_3.xac_info_metadata.exporter_high_version, root->xac_info.version_3.xac_info_metadata.exporter_low_version);
+        printf("  retarget_root_offset: %f\n", root->xac_info.version_3.xac_info_metadata.retarget_root_offset);
         break;
 
     case 4:
-        read_from_buffer(buffer, &root->xac_info.version_4, sizeof(XAC_InfoV4), buffer_end);
-        root->xac_info.version_4.source_application = read_string(buffer, buffer_end);
-        root->xac_info.version_4.original_filename = read_string(buffer, buffer_end);
-        root->xac_info.version_4.export_date = read_string(buffer, buffer_end);
-        root->xac_info.version_4.actor_name = read_string(buffer, buffer_end);
+        read_from_buffer(buffer, &root->xac_info.version_4.xac_info_metadata, sizeof(XAC_InfoV4Metadata), buffer_end);
+        skip_buffer(buffer, 2, buffer_end);
+
+        read_string(buffer, buffer_end, &root->xac_info.version_4.source_application);
+        read_string(buffer, buffer_end, &root->xac_info.version_4.original_filename);
+        read_string(buffer, buffer_end, &root->xac_info.version_4.export_date);
+        read_string(buffer, buffer_end, &root->xac_info.version_4.actor_name);
 
         printf("\nXAC_Info (v4):\n");
-        printf("  num_lods: %u\n", root->xac_info.version_4.num_lods);
-        printf("  trajectory_node_idx: %u\n", root->xac_info.version_4.trajectory_node_idx);
-        printf("  motion_extraction_idx: %u\n", root->xac_info.version_4.motion_extraction_idx);
-        printf("  exporter version: %u.%u\n", root->xac_info.version_4.exporter_high_version, root->xac_info.version_4.exporter_low_version);
-        printf("  retarget_root_offset: %f\n", root->xac_info.version_4.retarget_root_offset);
+        printf("  num_lods: %u\n", root->xac_info.version_4.xac_info_metadata.num_lods);
+        printf("  trajectory_node_idx: %u\n", root->xac_info.version_4.xac_info_metadata.trajectory_node_idx);
+        printf("  motion_extraction_idx: %u\n", root->xac_info.version_4.xac_info_metadata.motion_extraction_idx);
+        printf("  exporter version: %u.%u\n", root->xac_info.version_4.xac_info_metadata.exporter_high_version, root->xac_info.version_4.xac_info_metadata.exporter_low_version);
+        printf("  retarget_root_offset: %f\n", root->xac_info.version_4.xac_info_metadata.retarget_root_offset);
         break;
 
     default:
@@ -1038,40 +1045,36 @@ int parse_xac_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chun
         return -1;
     }
 
-    skip_buffer(buffer, 2, buffer_end);
-
     // Print common strings (with NULL safety)
     printf("\nCommon Strings:\n");
 
-#define SAFE_PRINT(str) printf("  %s: %s\n", #str, (str) ? (str) : "NULL")
-
     if (version == 1)
     {
-        SAFE_PRINT(root->xac_info.version_1.source_application);
-        SAFE_PRINT(root->xac_info.version_1.original_filename);
-        SAFE_PRINT(root->xac_info.version_1.export_date);
-        SAFE_PRINT(root->xac_info.version_1.actor_name);
+        printf("String : %s\n", root->xac_info.version_1.source_application);
+        printf("String : %s\n", root->xac_info.version_1.original_filename);
+        printf("String : %s\n", root->xac_info.version_1.export_date);
+        printf("String : %s\n", root->xac_info.version_1.actor_name);
     }
     else if (version == 2)
     {
-        SAFE_PRINT(root->xac_info.version_2.source_application);
-        SAFE_PRINT(root->xac_info.version_2.original_filename);
-        SAFE_PRINT(root->xac_info.version_2.export_date);
-        SAFE_PRINT(root->xac_info.version_2.actor_name);
+        printf("String : %s\n", root->xac_info.version_2.source_application);
+        printf("String : %s\n", root->xac_info.version_2.original_filename);
+        printf("String : %s\n", root->xac_info.version_2.export_date);
+        printf("String : %s\n", root->xac_info.version_2.actor_name);
     }
     else if (version == 3)
     {
-        SAFE_PRINT(root->xac_info.version_3.source_application);
-        SAFE_PRINT(root->xac_info.version_3.original_filename);
-        SAFE_PRINT(root->xac_info.version_3.export_date);
-        SAFE_PRINT(root->xac_info.version_3.actor_name);
+        printf("String : %s\n", root->xac_info.version_3.source_application);
+        printf("String : %s\n", root->xac_info.version_3.original_filename);
+        printf("String : %s\n", root->xac_info.version_3.export_date);
+        printf("String : %s\n", root->xac_info.version_3.actor_name);
     }
     else if (version == 4)
     {
-        SAFE_PRINT(root->xac_info.version_4.source_application);
-        SAFE_PRINT(root->xac_info.version_4.original_filename);
-        SAFE_PRINT(root->xac_info.version_4.export_date);
-        SAFE_PRINT(root->xac_info.version_4.actor_name);
+        printf("String : %s\n", root->xac_info.version_4.source_application);
+        printf("String : %s\n", root->xac_info.version_4.original_filename);
+        printf("String : %s\n", root->xac_info.version_4.export_date);
+        printf("String : %s\n", root->xac_info.version_4.actor_name);
     }
 
     printf("Buffer end position: %p\n", (void *)*buffer);
