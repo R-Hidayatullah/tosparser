@@ -2,6 +2,8 @@
 #define XAC_H
 #include "shared_formats.h"
 
+#define CHUNK_DATA_SIZE 32
+
 typedef enum
 {
     XAC_CHUNK_NODE = 0,
@@ -778,7 +780,7 @@ typedef struct
 {
     XAC_Header header;
     uint32_t chunk_data_size;
-    ChunkData chunk_data[16];
+    ChunkData chunk_data[CHUNK_DATA_SIZE];
 
     union
     {
@@ -1400,6 +1402,8 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
                 printf("Error: Failed to skip buffer.\n");
                 return -1;
             }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
             break;
         }
         }

@@ -89,7 +89,7 @@ int main(void)
     size_t extracted_size = 0;
 
     // Attempt to extract the first file from the archive
-    if (extract_data(ipf_file, &ipf_root.ipf_file_table[1], &extracted_data, &extracted_size))
+    if (extract_data(ipf_file, &ipf_root.ipf_file_table[2], &extracted_data, &extracted_size))
     {
         if (extracted_data) // Ensure extracted_data is valid before using it
         {
