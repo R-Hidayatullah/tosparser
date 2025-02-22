@@ -97,6 +97,41 @@ typedef enum
 
 typedef struct
 {
+    float x, y, z;
+} Attribute_Vector3;
+
+typedef struct
+{
+    float x, y, z, w;
+} Attribute_Vector4;
+
+typedef struct
+{
+    float r, g, b, a;
+} Attribute_RGBAColor;
+
+typedef struct
+{
+    float u, v;
+} Attribute_Vector2;
+
+typedef struct
+{
+    union
+    {
+        Attribute_Vector3 position;
+        Attribute_Vector3 normal;
+        Attribute_Vector4 tangent;
+        Attribute_Vector2 uv;
+        uint32_t color32;
+        uint32_t originalVertexNumber;
+        Attribute_RGBAColor color128;
+        Attribute_Vector3 bitangent;
+    } data;
+} XacAttribute;
+
+typedef struct
+{
     int32_t value; // Beware, not unsigned, as negative values are allowed
 
     char *name; // Pointer to dynamically allocated string (name[])
