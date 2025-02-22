@@ -89,7 +89,7 @@ int main(void)
     size_t extracted_size = 0;
 
     // Attempt to extract the first file from the archive
-    if (extract_data(ipf_file, &ipf_root.ipf_file_table[4], &extracted_data, &extracted_size))
+    if (extract_data(ipf_file, &ipf_root.ipf_file_table[1], &extracted_data, &extracted_size))
     {
         if (extracted_data) // Ensure extracted_data is valid before using it
         {
@@ -100,13 +100,22 @@ int main(void)
 
             // Print a hex dump of the first 16 bytes of the extracted file
             print_hex_dump(extracted_data, 16, 4);
-
-            parse_xac_root(&xac_root, extracted_data, extracted_size);
-
-            free(xac_root.xac_info.version_2.source_application);
-            free(xac_root.xac_info.version_2.original_filename);
-            free(xac_root.xac_info.version_2.export_date);
-            free(xac_root.xac_info.version_2.actor_name);
+            if (extracted_data && extracted_size >= 4)
+            {
+                if (memcmp(extracted_data, "XAC", 3) == 0)
+                {
+                    printf("Extracted data is an XAC file.\n");
+                    parse_xac_root(&xac_root, extracted_data, extracted_size);
+                    free(xac_root.xac_info.version_2.source_application);
+                    free(xac_root.xac_info.version_2.original_filename);
+                    free(xac_root.xac_info.version_2.export_date);
+                    free(xac_root.xac_info.version_2.actor_name);
+                }
+                else
+                {
+                    printf("Extracted data is NOT an XAC file.\n");
+                }
+            }
 
             free(extracted_data); // Free extracted data memory after use
         }
