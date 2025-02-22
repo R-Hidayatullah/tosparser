@@ -970,7 +970,27 @@ int parse_xac_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chun
         break;
 
     case 2:
-        read_from_buffer(buffer, &root->xac_info.version_2, sizeof(XAC_InfoV2), buffer_end);
+        read_from_buffer(buffer, &root->xac_info.version_2.repositioning_mask, sizeof(root->xac_info.version_2.repositioning_mask), buffer_end);
+        read_from_buffer(buffer, &root->xac_info.version_2.repositioning_node_idx, sizeof(root->xac_info.version_2.repositioning_node_idx), buffer_end);
+        read_from_buffer(buffer, &root->xac_info.version_2.exporter_high_version, sizeof(root->xac_info.version_2.exporter_high_version), buffer_end);
+        read_from_buffer(buffer, &root->xac_info.version_2.exporter_low_version, sizeof(root->xac_info.version_2.exporter_low_version), buffer_end);
+        // read_from_buffer(buffer, &root->xac_info.version_2.retarget_root_offset, sizeof(root->xac_info.version_2.retarget_root_offset), buffer_end);
+
+        uint32_t raw_float;
+        if (read_from_buffer(buffer, &raw_float, sizeof(uint32_t), buffer_end) == 0)
+        {
+            printf("Error: Failed to read float\n");
+        }
+        memcpy(&root->xac_info.version_2.retarget_root_offset, &raw_float, sizeof(float));
+        printf("Raw bytes for float: %02X %02X %02X %02X\n",
+               ((uint8_t *)&raw_float)[0], ((uint8_t *)&raw_float)[1],
+               ((uint8_t *)&raw_float)[2], ((uint8_t *)&raw_float)[3]);
+
+        float value;
+        uint32_t raw = 0x3B2E0000;
+        memcpy(&value, &raw, sizeof(float));
+        printf("Converted float: %f\n", value);
+
         root->xac_info.version_2.source_application = read_string(buffer, buffer_end);
         root->xac_info.version_2.original_filename = read_string(buffer, buffer_end);
         root->xac_info.version_2.export_date = read_string(buffer, buffer_end);
