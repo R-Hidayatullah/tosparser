@@ -1,10 +1,13 @@
 #if !defined(SHARED_FORMATS_H)
 #define SHARED_FORMATS_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
-const size_t IDENTIFIER_LEN = 4;
+#define IDENTIFIER_LEN 4
 
 typedef enum
 {
@@ -147,5 +150,74 @@ typedef struct
     // followed by:
     // uint8 buffer_data[num_bytes];
 } AttributeData;
+
+uint32_t read_uint32_from_buffer(const uint8_t *buffer, size_t *index);
+char *parse_string_from_buffer(const uint8_t *buffer, size_t *index);
+uint32_t read_uint32_from_file(FILE *file);
+char *parse_string_from_file(FILE *file);
+
+// Read a uint32_t from a buffer (little-endian)
+uint32_t read_uint32_from_buffer(const uint8_t *buffer, size_t *index)
+{
+    uint32_t value = buffer[*index] | (buffer[*index + 1] << 8) |
+                     (buffer[*index + 2] << 16) | (buffer[*index + 3] << 24);
+    *index += 4;
+    return value;
+}
+
+// Parse a string from a buffer with uint32_t size
+char *parse_string_from_buffer(const uint8_t *buffer, size_t *index)
+{
+    if (!buffer || !index)
+        return NULL;
+
+    uint32_t length = read_uint32_from_buffer(buffer, index);
+
+    // Allocate memory (+1 for null terminator)
+    char *str = (char *)malloc(length + 1);
+    if (!str)
+        return NULL;
+
+    memcpy(str, buffer + *index, length);
+    str[length] = '\0'; // Null-terminate the string
+    *index += length;
+
+    return str;
+}
+
+// Read a uint32_t from a file (little-endian)
+uint32_t read_uint32_from_file(FILE *file)
+{
+    uint8_t buf[4];
+    if (fread(buf, 1, 4, file) != 4)
+        return 0;
+
+    return (uint32_t)(buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24));
+}
+
+// Parse a string from a file with uint32_t size
+char *parse_string_from_file(FILE *file)
+{
+    if (!file)
+        return NULL;
+
+    uint32_t length = read_uint32_from_file(file);
+    if (length == 0)
+        return NULL;
+
+    // Allocate memory (+1 for null terminator)
+    char *str = (char *)malloc(length + 1);
+    if (!str)
+        return NULL;
+
+    if (fread(str, 1, length, file) != length)
+    {
+        free(str);
+        return NULL;
+    }
+
+    str[length] = '\0'; // Null-terminate the string
+    return str;
+}
 
 #endif // SHARED_FORMATS_H
