@@ -6,20 +6,20 @@ typedef enum
 {
     XAC_CHUNK_NODE = 0,
     XAC_CHUNK_MESH = 1,
-    XAC_CHUNK_SKINNINGINFO = 2,
-    XAC_CHUNK_STDMATERIAL = 3,
-    XAC_CHUNK_STDMATERIALLAYER = 4,
-    XAC_CHUNK_FXMATERIAL = 5,
+    XAC_CHUNK_SKINNING_INFO = 2,
+    XAC_CHUNK_STANDARD_MATERIAL = 3,
+    XAC_CHUNK_STANDARD_MATERIAL_LAYER = 4,
+    XAC_CHUNK_FX_MATERIAL = 5,
     XAC_CHUNK_LIMIT = 6,
     XAC_CHUNK_INFO = 7,
-    XAC_CHUNK_MESHLODLEVELS = 8,
-    XAC_CHUNK_STDPROGMORPHTARGET = 9,
-    XAC_CHUNK_NODEGROUPS = 10,
-    XAC_CHUNK_NODES = 11,             // XAC_Nodes
-    XAC_CHUNK_STDPMORPHTARGETS = 12,  // XAC_PMorphTargets
-    XAC_CHUNK_MATERIALINFO = 13,      // XAC_MaterialInfo
-    XAC_CHUNK_NODEMOTIONSOURCES = 14, // XAC_NodeMotionSources
-    XAC_CHUNK_ATTACHMENTNODES = 15,   // XAC_AttachmentNodes
+    XAC_CHUNK_MESH_LOD_LEVEL = 8,
+    XAC_CHUNK_STD_MORPH_TARGET = 9,
+    XAC_CHUNK_NODE_GROUPS = 10,
+    XAC_CHUNK_NODES = 11,               // XAC_Nodes
+    XAC_CHUNK_STD_MORPH_TARGETS = 12,   // XAC_PMorphTargets
+    XAC_CHUNK_MATERIAL_INFO = 13,       // XAC_MaterialInfo
+    XAC_CHUNK_NODE_MOTION_SOURCES = 14, // XAC_NodeMotionSources
+    XAC_CHUNK_ATTACHMENT_NODES = 15,    // XAC_AttachmentNodes
     XAC_FORCE_32BIT = (int)0xFFFFFFFF
 } XacChunkType;
 
@@ -758,13 +758,6 @@ typedef struct
 typedef struct
 {
     XAC_Header header;
-    union
-    {
-        XAC_Info version_1;
-        XAC_InfoV2 version_2;
-        XAC_InfoV3 version_3;
-        XAC_InfoV4 version_4;
-    } xac_info;
 
     union
     {
@@ -773,6 +766,19 @@ typedef struct
         XAC_NodeV3 version_3;
         XAC_NodeV4 version_4;
     } xac_node;
+
+    union
+    {
+        XAC_Mesh version_1;
+        XAC_MeshV2 version_2;
+    } xac_mesh;
+    union
+    {
+        XAC_Info version_1;
+        XAC_InfoV2 version_2;
+        XAC_InfoV3 version_3;
+        XAC_InfoV4 version_4;
+    } xac_info;
 
     union
     {
@@ -849,6 +855,23 @@ typedef struct
 
 } XAC_Root;
 
+int parse_xac_node(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_mesh(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_nodes(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_node_groups(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_skinning_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_mesh_lod_level(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_std_morph_target(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_std_morph_targets(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_standard_material(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_standard_material_layer(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_fx_material(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_limit(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_material_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_node_motion_sources(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+int parse_xac_attachment_nodes(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end);
+
 size_t skip_buffer(const uint8_t **buffer, size_t size, const uint8_t *buffer_end);
 size_t read_from_buffer(const uint8_t **buffer, void *dest, size_t size, const uint8_t *buffer_end);
 int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size);
@@ -874,6 +897,102 @@ size_t read_from_buffer(const uint8_t **buffer, void *dest, size_t size, const u
     return size;
 }
 
+int parse_xac_node(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_mesh(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_nodes(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_node_groups(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_skinning_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_mesh_lod_level(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_std_morph_target(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_std_morph_targets(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_standard_material(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_standard_material_layer(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_fx_material(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_limit(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_material_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_node_motion_sources(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
+int parse_xac_attachment_nodes(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end)
+{
+    (void)root; // Mark unused parameter
+    return skip_buffer(buffer, chunk_data->size_in_bytes, buffer_end) == chunk_data->size_in_bytes ? 0 : -1;
+}
+
 int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
 {
     const uint8_t *buffer_end = buffer + buffer_size;
@@ -891,7 +1010,6 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
     while (buffer + sizeof(ChunkData) <= buffer_end)
     {
         ChunkData chunk_data;
-        const uint8_t *before_chunk = buffer; // Save buffer position before parsing
 
         // Read chunk data
         if (read_from_buffer(&buffer, &chunk_data, sizeof(ChunkData), buffer_end) != sizeof(ChunkData))
@@ -902,21 +1020,80 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
         printf("Chunk ID: %u, Version: %u, Size: %u bytes\n",
                chunk_data.chunk_id, chunk_data.version, chunk_data.size_in_bytes);
 
-        // Ensure we don't read past the buffer
         if (buffer + chunk_data.size_in_bytes > buffer_end)
         {
             printf("Error: Chunk size exceeds buffer limits.\n");
             return -1;
         }
 
-        const uint8_t *after_chunk = buffer + chunk_data.size_in_bytes; // Expected position after chunk
+        const uint8_t *after_chunk = buffer + chunk_data.size_in_bytes;
 
-        printf("Before chunk: %p, After chunk: %p, Expected offset: %u\n",
-               (void *)before_chunk, (void *)after_chunk, chunk_data.size_in_bytes);
-
-        // Process known chunk types
         switch ((XacChunkType)chunk_data.chunk_id)
         {
+        case XAC_CHUNK_NODE:
+            if (parse_xac_node(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_INFO:
+            if (parse_xac_info(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_MESH:
+            if (parse_xac_mesh(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_NODES:
+            if (parse_xac_nodes(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_NODE_GROUPS:
+            if (parse_xac_node_groups(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_SKINNING_INFO:
+            if (parse_xac_skinning_info(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_MESH_LOD_LEVEL:
+            if (parse_xac_mesh_lod_level(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_STD_MORPH_TARGET:
+            if (parse_xac_std_morph_target(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_STD_MORPH_TARGETS:
+            if (parse_xac_std_morph_targets(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_STANDARD_MATERIAL:
+            if (parse_xac_standard_material(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_STANDARD_MATERIAL_LAYER:
+            if (parse_xac_standard_material_layer(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_FX_MATERIAL:
+            if (parse_xac_fx_material(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_LIMIT:
+            if (parse_xac_limit(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_MATERIAL_INFO:
+            if (parse_xac_material_info(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_NODE_MOTION_SOURCES:
+            if (parse_xac_node_motion_sources(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
+        case XAC_CHUNK_ATTACHMENT_NODES:
+            if (parse_xac_attachment_nodes(root, &buffer, &chunk_data, buffer_end) != 0)
+                return -1;
+            break;
         default:
             printf("Skipping unknown chunk type: %u\n", chunk_data.chunk_id);
             if (skip_buffer(&buffer, chunk_data.size_in_bytes, buffer_end) != chunk_data.size_in_bytes)
@@ -927,7 +1104,6 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
             break;
         }
 
-        // Check if actual movement matches expected movement
         if (buffer != after_chunk)
         {
             printf("Error: Buffer position mismatch! Expected %p, but got %p\n",
@@ -936,7 +1112,7 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
         }
     }
 
-    return 0; // Success
+    return 0;
 }
 
 #endif // XAC_H
