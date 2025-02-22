@@ -178,11 +178,11 @@ typedef struct
 
 typedef struct
 {
-    uint8_t fourcc[IDENTIFIER_LEN]; // Must be "XAC "
-    uint8_t high_version;           // High version (e.g., 2 for v2.34)
-    uint8_t low_version;            // Low version  (e.g., 34 for v2.34)
-    uint8_t endian_type;            // Endianness of stored data [0 = little-endian, 1 = big-endian]
-    uint8_t mul_order;              // See the enum MULORDER_...
+    uint32_t fourcc;      // Must be "XAC "
+    uint8_t high_version; // High version (e.g., 2 for v2.34)
+    uint8_t low_version;  // Low version  (e.g., 34 for v2.34)
+    uint8_t endian_type;  // Endianness of stored data [0 = little-endian, 1 = big-endian]
+    uint8_t mul_order;    // See the enum MULORDER_...
 } XAC_Header;
 
 typedef struct
@@ -757,6 +757,7 @@ typedef struct
 
 typedef struct
 {
+    XAC_Header header;
     union
     {
         XAC_Info version_1;
@@ -847,5 +848,95 @@ typedef struct
     } xac_attachment_nodes;
 
 } XAC_Root;
+
+size_t skip_buffer(const uint8_t **buffer, size_t size, const uint8_t *buffer_end);
+size_t read_from_buffer(const uint8_t **buffer, void *dest, size_t size, const uint8_t *buffer_end);
+int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size);
+
+size_t skip_buffer(const uint8_t **buffer, size_t size, const uint8_t *buffer_end)
+{
+    if (*buffer + size > buffer_end)
+    {
+        return 0; // Prevent buffer overflow
+    }
+    *buffer += size;
+    return size;
+}
+
+size_t read_from_buffer(const uint8_t **buffer, void *dest, size_t size, const uint8_t *buffer_end)
+{
+    if (*buffer + size > buffer_end)
+    {
+        return 0; // Prevent buffer overflow
+    }
+    memcpy(dest, *buffer, size);
+    *buffer += size;
+    return size;
+}
+
+int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
+{
+    const uint8_t *buffer_end = buffer + buffer_size;
+
+    // Read the header
+    if (read_from_buffer(&buffer, &root->header, sizeof(XAC_Header), buffer_end) != sizeof(XAC_Header))
+    {
+        return -1; // Error: Not enough data
+    }
+
+    printf("\nMagic: 0x%08X, Version: %u.%u\n",
+           root->header.fourcc, root->header.high_version, root->header.low_version);
+
+    // Process chunks until we reach the end of the buffer
+    while (buffer + sizeof(ChunkData) <= buffer_end)
+    {
+        ChunkData chunk_data;
+        const uint8_t *before_chunk = buffer; // Save buffer position before parsing
+
+        // Read chunk data
+        if (read_from_buffer(&buffer, &chunk_data, sizeof(ChunkData), buffer_end) != sizeof(ChunkData))
+        {
+            return -1; // Error: Not enough data
+        }
+
+        printf("Chunk ID: %u, Version: %u, Size: %u bytes\n",
+               chunk_data.chunk_id, chunk_data.version, chunk_data.size_in_bytes);
+
+        // Ensure we don't read past the buffer
+        if (buffer + chunk_data.size_in_bytes > buffer_end)
+        {
+            printf("Error: Chunk size exceeds buffer limits.\n");
+            return -1;
+        }
+
+        const uint8_t *after_chunk = buffer + chunk_data.size_in_bytes; // Expected position after chunk
+
+        printf("Before chunk: %p, After chunk: %p, Expected offset: %u\n",
+               (void *)before_chunk, (void *)after_chunk, chunk_data.size_in_bytes);
+
+        // Process known chunk types
+        switch ((XacChunkType)chunk_data.chunk_id)
+        {
+        default:
+            printf("Skipping unknown chunk type: %u\n", chunk_data.chunk_id);
+            if (skip_buffer(&buffer, chunk_data.size_in_bytes, buffer_end) != chunk_data.size_in_bytes)
+            {
+                printf("Error: Failed to skip buffer.\n");
+                return -1;
+            }
+            break;
+        }
+
+        // Check if actual movement matches expected movement
+        if (buffer != after_chunk)
+        {
+            printf("Error: Buffer position mismatch! Expected %p, but got %p\n",
+                   (void *)after_chunk, (void *)buffer);
+            return -1;
+        }
+    }
+
+    return 0; // Success
+}
 
 #endif // XAC_H
