@@ -103,6 +103,11 @@ int main(void)
 
             parse_xac_root(&xac_root, extracted_data, extracted_size);
 
+            free(xac_root.xac_info.version_2.source_application);
+            free(xac_root.xac_info.version_2.original_filename);
+            free(xac_root.xac_info.version_2.export_date);
+            free(xac_root.xac_info.version_2.actor_name);
+
             free(extracted_data); // Free extracted data memory after use
         }
         else
