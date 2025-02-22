@@ -12,6 +12,8 @@ typedef enum
     XPM_FORCE_32BIT = (int)0xFFFFFFFF
 } XPM_ChunkType;
 
+#pragma pack(push, 1) // Save current packing and set new alignment
+
 typedef struct
 {
     float time;  // the time, in seconds
@@ -64,6 +66,7 @@ typedef struct
 
     XPM_ProgressiveSubMotion *sub_motions; // pointer to array of XPM_ProgressiveSubMotion[num_sub_motions]
 } XPM_SubMotions;
+#pragma pack(pop) // Restore previous packing alignment
 
 typedef struct
 {

@@ -65,6 +65,7 @@ extern "C"
         0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D};
 
 #pragma pack(push, 1) // Ensure structures are packed without padding
+
     /**
      * Structure representing the footer of an IPF file.
      * This footer is located at the end of the file and contains metadata
@@ -80,9 +81,7 @@ extern "C"
         uint32_t version_to_patch;   // Version number before patching
         uint32_t new_version;        // Version number after patching
     } IPF_Footer;
-#pragma pack(pop) // Restore default alignment
 
-#pragma pack(push, 1) // Ensure structures are packed without padding
     /**
      * Structure representing metadata for a single file in the IPF archive.
      * This metadata is part of the file table and provides information
@@ -97,6 +96,7 @@ extern "C"
         uint32_t file_pointer;           // Offset to the actual file data in the archive
         uint16_t container_name_length;  // Length of the container name string
     } IPF_FileMetadata;
+
 #pragma pack(pop) // Restore default alignment
 
     /**
