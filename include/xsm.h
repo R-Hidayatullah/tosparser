@@ -25,8 +25,6 @@ typedef enum
     XSM_COMPRESSOR_RICE = 1
 } CompressorType;
 
-#pragma pack(push, 1) // Save current packing and set new alignment
-
 typedef struct
 {
     Vector3 value_data;
@@ -252,7 +250,6 @@ typedef struct
     // XSM_WaveletSubMotion *wavelet_sub_motions; // XSM_WaveletSubMotion[num_sub_motions]
     XSM_WaveletChunk *wavelet_chunks; // XSM_WaveletChunk[num_chunks]
 } XSM_WaveletInfo;
-#pragma pack(pop) // Restore previous packing alignment
 
 typedef struct
 {

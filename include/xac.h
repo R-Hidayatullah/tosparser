@@ -97,8 +97,6 @@ typedef enum
     ROTATION_SCALE_TRANSLATION = 1  /**< LocalTM = rotation * scale * translation (3DSMax style) [default]. */
 } XacMultiplicationOrder;
 
-// #pragma pack(push, 1) // Save current packing and set new alignment
-
 typedef struct
 {
     float x, y, z;
@@ -773,8 +771,6 @@ typedef struct
 
     uint16_t *attachment_indices; // Pointer to array of uint16_t[num_nodes], index per attachment node.
 } XAC_AttachmentNodes;
-
-// #pragma pack(pop) // Restore previous packing alignment
 
 typedef struct
 {
