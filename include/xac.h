@@ -970,9 +970,6 @@ int parse_xac_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chun
         return -1;
     }
 
-    printf("\n=== Parsing XAC_Info version: %u ===\n", version);
-    printf("Buffer start position: %p\n", (void *)*buffer);
-
     switch (version)
     {
     case 1:
@@ -984,10 +981,6 @@ int parse_xac_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chun
         read_string(buffer, buffer_end, &root->xac_info.version_1.export_date);
         read_string(buffer, buffer_end, &root->xac_info.version_1.actor_name);
 
-        printf("\nXAC_Info (v1):\n");
-        printf("  repositioning_mask: %u\n", root->xac_info.version_1.xac_info_metadata.repositioning_mask);
-        printf("  repositioning_node_idx: %u\n", root->xac_info.version_1.xac_info_metadata.repositioning_node_idx);
-        printf("  exporter version: %u.%u\n", root->xac_info.version_1.xac_info_metadata.exporter_high_version, root->xac_info.version_1.xac_info_metadata.exporter_low_version);
         break;
 
     case 2:
@@ -999,11 +992,6 @@ int parse_xac_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chun
         read_string(buffer, buffer_end, &root->xac_info.version_2.export_date);
         read_string(buffer, buffer_end, &root->xac_info.version_2.actor_name);
 
-        printf("\nXAC_Info (v2):\n");
-        printf("  repositioning_mask: %u\n", root->xac_info.version_2.xac_info_metadata.repositioning_mask);
-        printf("  repositioning_node_idx: %u\n", root->xac_info.version_2.xac_info_metadata.repositioning_node_idx);
-        printf("  exporter version: %u.%u\n", root->xac_info.version_2.xac_info_metadata.exporter_high_version, root->xac_info.version_2.xac_info_metadata.exporter_low_version);
-        printf("  retarget_root_offset: %f\n", root->xac_info.version_2.xac_info_metadata.retarget_root_offset);
         break;
 
     case 3:
@@ -1015,12 +1003,6 @@ int parse_xac_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chun
         read_string(buffer, buffer_end, &root->xac_info.version_3.export_date);
         read_string(buffer, buffer_end, &root->xac_info.version_3.actor_name);
 
-        printf("\nXAC_Info (v3):\n");
-        printf("  trajectory_node_idx: %u\n", root->xac_info.version_3.xac_info_metadata.trajectory_node_idx);
-        printf("  motion_extraction_idx: %u\n", root->xac_info.version_3.xac_info_metadata.motion_extraction_idx);
-        printf("  motion_extraction_mask: %u\n", root->xac_info.version_3.xac_info_metadata.motion_extraction_mask);
-        printf("  exporter version: %u.%u\n", root->xac_info.version_3.xac_info_metadata.exporter_high_version, root->xac_info.version_3.xac_info_metadata.exporter_low_version);
-        printf("  retarget_root_offset: %f\n", root->xac_info.version_3.xac_info_metadata.retarget_root_offset);
         break;
 
     case 4:
@@ -1031,53 +1013,12 @@ int parse_xac_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chun
         read_string(buffer, buffer_end, &root->xac_info.version_4.original_filename);
         read_string(buffer, buffer_end, &root->xac_info.version_4.export_date);
         read_string(buffer, buffer_end, &root->xac_info.version_4.actor_name);
-
-        printf("\nXAC_Info (v4):\n");
-        printf("  num_lods: %u\n", root->xac_info.version_4.xac_info_metadata.num_lods);
-        printf("  trajectory_node_idx: %u\n", root->xac_info.version_4.xac_info_metadata.trajectory_node_idx);
-        printf("  motion_extraction_idx: %u\n", root->xac_info.version_4.xac_info_metadata.motion_extraction_idx);
-        printf("  exporter version: %u.%u\n", root->xac_info.version_4.xac_info_metadata.exporter_high_version, root->xac_info.version_4.xac_info_metadata.exporter_low_version);
-        printf("  retarget_root_offset: %f\n", root->xac_info.version_4.xac_info_metadata.retarget_root_offset);
         break;
 
     default:
         printf("Error: Unsupported version %u\n", version);
         return -1;
     }
-
-    // Print common strings (with NULL safety)
-    printf("\nCommon Strings:\n");
-
-    if (version == 1)
-    {
-        printf("String : %s\n", root->xac_info.version_1.source_application);
-        printf("String : %s\n", root->xac_info.version_1.original_filename);
-        printf("String : %s\n", root->xac_info.version_1.export_date);
-        printf("String : %s\n", root->xac_info.version_1.actor_name);
-    }
-    else if (version == 2)
-    {
-        printf("String : %s\n", root->xac_info.version_2.source_application);
-        printf("String : %s\n", root->xac_info.version_2.original_filename);
-        printf("String : %s\n", root->xac_info.version_2.export_date);
-        printf("String : %s\n", root->xac_info.version_2.actor_name);
-    }
-    else if (version == 3)
-    {
-        printf("String : %s\n", root->xac_info.version_3.source_application);
-        printf("String : %s\n", root->xac_info.version_3.original_filename);
-        printf("String : %s\n", root->xac_info.version_3.export_date);
-        printf("String : %s\n", root->xac_info.version_3.actor_name);
-    }
-    else if (version == 4)
-    {
-        printf("String : %s\n", root->xac_info.version_4.source_application);
-        printf("String : %s\n", root->xac_info.version_4.original_filename);
-        printf("String : %s\n", root->xac_info.version_4.export_date);
-        printf("String : %s\n", root->xac_info.version_4.actor_name);
-    }
-
-    printf("Buffer end position: %p\n", (void *)*buffer);
     return 0;
 }
 
@@ -1230,6 +1171,7 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
 
         switch ((XacChunkType)chunk_data.chunk_id)
         {
+
         case XAC_CHUNK_NODE:
         {
             if (parse_xac_node(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
@@ -1240,16 +1182,7 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
             root->chunk_data_size += 1;
             break;
         }
-        case XAC_CHUNK_INFO:
-        {
-            if (parse_xac_info(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
-            {
-                return -1;
-            }
-            root->chunk_data[root->chunk_data_size] = chunk_data;
-            root->chunk_data_size += 1;
-            break;
-        }
+
         case XAC_CHUNK_MESH:
         {
             if (parse_xac_mesh(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
@@ -1260,26 +1193,7 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
             root->chunk_data_size += 1;
             break;
         }
-        case XAC_CHUNK_NODES:
-        {
-            if (parse_xac_nodes(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
-            {
-                return -1;
-            }
-            root->chunk_data[root->chunk_data_size] = chunk_data;
-            root->chunk_data_size += 1;
-            break;
-        }
-        case XAC_CHUNK_NODE_GROUPS:
-        {
-            if (parse_xac_node_groups(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
-            {
-                return -1;
-            }
-            root->chunk_data[root->chunk_data_size] = chunk_data;
-            root->chunk_data_size += 1;
-            break;
-        }
+
         case XAC_CHUNK_SKINNING_INFO:
         {
             if (parse_xac_skinning_info(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
@@ -1290,36 +1204,7 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
             root->chunk_data_size += 1;
             break;
         }
-        case XAC_CHUNK_MESH_LOD_LEVEL:
-        {
-            if (parse_xac_mesh_lod_level(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
-            {
-                return -1;
-            }
-            root->chunk_data[root->chunk_data_size] = chunk_data;
-            root->chunk_data_size += 1;
-            break;
-        }
-        case XAC_CHUNK_STD_MORPH_TARGET:
-        {
-            if (parse_xac_std_morph_target(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
-            {
-                return -1;
-            }
-            root->chunk_data[root->chunk_data_size] = chunk_data;
-            root->chunk_data_size += 1;
-            break;
-        }
-        case XAC_CHUNK_STD_MORPH_TARGETS:
-        {
-            if (parse_xac_std_morph_targets(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
-            {
-                return -1;
-            }
-            root->chunk_data[root->chunk_data_size] = chunk_data;
-            root->chunk_data_size += 1;
-            break;
-        }
+
         case XAC_CHUNK_STANDARD_MATERIAL:
         {
             if (parse_xac_standard_material(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
@@ -1330,6 +1215,7 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
             root->chunk_data_size += 1;
             break;
         }
+
         case XAC_CHUNK_STANDARD_MATERIAL_LAYER:
         {
             if (parse_xac_standard_material_layer(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
@@ -1340,6 +1226,7 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
             root->chunk_data_size += 1;
             break;
         }
+
         case XAC_CHUNK_FX_MATERIAL:
         {
             if (parse_xac_fx_material(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
@@ -1350,6 +1237,7 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
             root->chunk_data_size += 1;
             break;
         }
+
         case XAC_CHUNK_LIMIT:
         {
             if (parse_xac_limit(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
@@ -1360,6 +1248,73 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
             root->chunk_data_size += 1;
             break;
         }
+
+        case XAC_CHUNK_INFO:
+        {
+            if (parse_xac_info(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
+                return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
+            break;
+        }
+
+        case XAC_CHUNK_MESH_LOD_LEVEL:
+        {
+            if (parse_xac_mesh_lod_level(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
+                return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
+            break;
+        }
+
+        case XAC_CHUNK_STD_MORPH_TARGET:
+        {
+            if (parse_xac_std_morph_target(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
+                return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
+            break;
+        }
+
+        case XAC_CHUNK_NODE_GROUPS:
+        {
+            if (parse_xac_node_groups(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
+                return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
+            break;
+        }
+
+        case XAC_CHUNK_NODES:
+        {
+            if (parse_xac_nodes(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
+                return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
+            break;
+        }
+
+        case XAC_CHUNK_STD_MORPH_TARGETS:
+        {
+            if (parse_xac_std_morph_targets(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
+                return -1;
+            }
+            root->chunk_data[root->chunk_data_size] = chunk_data;
+            root->chunk_data_size += 1;
+            break;
+        }
+
         case XAC_CHUNK_MATERIAL_INFO:
         {
             if (parse_xac_material_info(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
@@ -1370,6 +1325,7 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
             root->chunk_data_size += 1;
             break;
         }
+
         case XAC_CHUNK_NODE_MOTION_SOURCES:
         {
             if (parse_xac_node_motion_sources(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
@@ -1380,6 +1336,7 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
             root->chunk_data_size += 1;
             break;
         }
+
         case XAC_CHUNK_ATTACHMENT_NODES:
         {
             if (parse_xac_attachment_nodes(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
@@ -1390,6 +1347,7 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
             root->chunk_data_size += 1;
             break;
         }
+
         default:
         {
             printf("Skipping unknown chunk type: %u\n", chunk_data.chunk_id);
