@@ -155,73 +155,66 @@ typedef struct
 
 #pragma pack(pop) // Restore default alignment
 
-uint32_t read_uint32_from_buffer(const uint8_t *buffer, size_t *index);
-char *parse_string_from_buffer(const uint8_t *buffer, size_t *index);
-uint32_t read_uint32_from_file(FILE *file);
-char *parse_string_from_file(FILE *file);
+size_t skip_buffer(const uint8_t **buffer, size_t size, const uint8_t *buffer_end);
+size_t read_from_buffer(const uint8_t **buffer, void *dest, size_t size, const uint8_t *buffer_end);
+int read_string(const uint8_t **buffer, const uint8_t *buffer_end, char **result_text);
 
-// Read a uint32_t from a buffer (little-endian)
-uint32_t read_uint32_from_buffer(const uint8_t *buffer, size_t *index)
+size_t skip_buffer(const uint8_t **buffer, size_t size, const uint8_t *buffer_end)
 {
-    uint32_t value = buffer[*index] | (buffer[*index + 1] << 8) |
-                     (buffer[*index + 2] << 16) | (buffer[*index + 3] << 24);
-    *index += 4;
-    return value;
-}
-
-// Parse a string from a buffer with uint32_t size
-char *parse_string_from_buffer(const uint8_t *buffer, size_t *index)
-{
-    if (!buffer || !index)
-        return NULL;
-
-    uint32_t length = read_uint32_from_buffer(buffer, index);
-
-    // Allocate memory (+1 for null terminator)
-    char *str = (char *)malloc(length + 1);
-    if (!str)
-        return NULL;
-
-    memcpy(str, buffer + *index, length);
-    str[length] = '\0'; // Null-terminate the string
-    *index += length;
-
-    return str;
-}
-
-// Read a uint32_t from a file (little-endian)
-uint32_t read_uint32_from_file(FILE *file)
-{
-    uint8_t buf[4];
-    if (fread(buf, 1, 4, file) != 4)
-        return 0;
-
-    return (uint32_t)(buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24));
-}
-
-// Parse a string from a file with uint32_t size
-char *parse_string_from_file(FILE *file)
-{
-    if (!file)
-        return NULL;
-
-    uint32_t length = read_uint32_from_file(file);
-    if (length == 0)
-        return NULL;
-
-    // Allocate memory (+1 for null terminator)
-    char *str = (char *)malloc(length + 1);
-    if (!str)
-        return NULL;
-
-    if (fread(str, 1, length, file) != length)
+    if (*buffer + size > buffer_end)
     {
-        free(str);
-        return NULL;
+        return 0; // Prevent buffer overflow
+    }
+    *buffer += size;
+    return size;
+}
+
+size_t read_from_buffer(const uint8_t **buffer, void *dest, size_t size, const uint8_t *buffer_end)
+{
+    if (*buffer + size > buffer_end)
+    {
+        printf("Error: Buffer overflow prevented\n");
+        return 0;
     }
 
-    str[length] = '\0'; // Null-terminate the string
-    return str;
+    memcpy(dest, *buffer, size);
+    *buffer += size;
+
+    return size;
+}
+
+int read_string(const uint8_t **buffer, const uint8_t *buffer_end, char **result_text)
+{
+    if (*buffer + sizeof(uint32_t) > buffer_end)
+    {
+        return EXIT_FAILURE; // Prevent buffer overflow
+    }
+
+    // Read string length (ensure correct endianness if necessary)
+    uint32_t length;
+    memcpy(&length, *buffer, sizeof(uint32_t));
+    *buffer += sizeof(uint32_t); // Move past the length field
+
+    // Validate length
+    if (length == 0 || *buffer + length > buffer_end || length > 1024 * 1024) // Limiting size to 1MB
+    {
+        return EXIT_FAILURE; // Prevent buffer overflow or invalid length
+    }
+
+    // Allocate memory for the string (+1 for null terminator)
+    *result_text = (char *)malloc(length + 1);
+    if (!*result_text)
+    {
+        return EXIT_FAILURE; // Memory allocation failure
+    }
+
+    // Copy string data
+    memcpy(*result_text, *buffer, length);
+    (*result_text)[length] = '\0'; // Null-terminate the string
+
+    *buffer += length; // Move past the string data
+
+    return EXIT_SUCCESS;
 }
 
 #endif // SHARED_FORMATS_H
