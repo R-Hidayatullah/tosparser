@@ -1005,11 +1005,6 @@ int parse_xac_mesh(XAC_Root *root, const uint8_t **buffer, const ChunkData *chun
 
 int parse_xac_nodes(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end, uint32_t version)
 {
-    (void)root;
-    (void)buffer;
-    (void)chunk_data;
-    (void)buffer_end;
-
     if (*buffer + chunk_data->size_in_bytes > buffer_end)
     {
         printf("Error: Buffer overflow detected!\n");
@@ -1021,6 +1016,7 @@ int parse_xac_nodes(XAC_Root *root, const uint8_t **buffer, const ChunkData *chu
     case 1:
         read_from_buffer(buffer, &root->xac_nodes.version_1.num_nodes, sizeof(root->xac_nodes.version_1.num_nodes), buffer_end);
         read_from_buffer(buffer, &root->xac_nodes.version_1.num_root_nodes, sizeof(root->xac_nodes.version_1.num_root_nodes), buffer_end);
+
         // Validate num_nodes before allocating memory
         if (root->xac_nodes.version_1.num_nodes > 0)
         {
@@ -1036,7 +1032,23 @@ int parse_xac_nodes(XAC_Root *root, const uint8_t **buffer, const ChunkData *chu
             // Read each node
             for (uint32_t i = 0; i < root->xac_nodes.version_1.num_nodes; i++)
             {
-                read_from_buffer(buffer, &root->xac_nodes.version_1.nodes[i], sizeof(XAC_NodeV4), buffer_end);
+                read_from_buffer(buffer, &root->xac_nodes.version_1.nodes[i].version_4.local_quat, sizeof(Quaternion), buffer_end);
+                read_from_buffer(buffer, &root->xac_nodes.version_1.nodes[i].version_4.scale_rot, sizeof(Quaternion), buffer_end);
+                read_from_buffer(buffer, &root->xac_nodes.version_1.nodes[i].version_4.local_pos, sizeof(Vector3), buffer_end);
+                read_from_buffer(buffer, &root->xac_nodes.version_1.nodes[i].version_4.local_scale, sizeof(Vector3), buffer_end);
+                read_from_buffer(buffer, &root->xac_nodes.version_1.nodes[i].version_4.shear, sizeof(Vector3), buffer_end);
+                read_from_buffer(buffer, &root->xac_nodes.version_1.nodes[i].version_4.skeletal_lods, sizeof(uint32_t), buffer_end);
+                read_from_buffer(buffer, &root->xac_nodes.version_1.nodes[i].version_4.motion_lods, sizeof(uint32_t), buffer_end);
+                read_from_buffer(buffer, &root->xac_nodes.version_1.nodes[i].version_4.parent_idx, sizeof(uint32_t), buffer_end);
+                read_from_buffer(buffer, &root->xac_nodes.version_1.nodes[i].version_4.num_children, sizeof(uint32_t), buffer_end);
+                read_from_buffer(buffer, &root->xac_nodes.version_1.nodes[i].version_4.node_flags, sizeof(uint8_t), buffer_end);
+                skip_buffer(buffer, 3, buffer_end);
+                for (uint32_t j = 0; j < 16; j++)
+                {
+                    read_from_buffer(buffer, &root->xac_nodes.version_1.nodes[i].version_4.obb[j], sizeof(float), buffer_end);
+                }
+                read_from_buffer(buffer, &root->xac_nodes.version_1.nodes[i].version_4.importance_factor, sizeof(float), buffer_end);
+                read_string(buffer, buffer_end, &root->xac_nodes.version_1.nodes[i].version_4.node_name);
             }
         }
         else
@@ -1524,13 +1536,14 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
 
         case XAC_CHUNK_NODES:
         {
-            // if (parse_xac_nodes(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
-            // {
-            //     return -1;
-            // }
+            if (parse_xac_nodes(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
+                return -1;
+            }
+
             root->chunk_data[root->chunk_data_size] = chunk_data;
             root->chunk_data_size += 1;
-            skip_buffer(&buffer, chunk_data.size_in_bytes, buffer_end);
+            // skip_buffer(&buffer, chunk_data.size_in_bytes, buffer_end);
             break;
         }
 

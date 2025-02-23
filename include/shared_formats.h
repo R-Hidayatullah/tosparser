@@ -21,8 +21,6 @@ typedef enum
     MULORDER_ROT_SCALE_TRANS = 1
 } MatrixMulOrder;
 
-#pragma pack(push, 1) // Save current packing and set new alignment
-
 typedef struct
 {
     uint32_t chunk_id;
@@ -152,8 +150,6 @@ typedef struct
     // followed by:
     // uint8 buffer_data[num_bytes];
 } AttributeData;
-
-#pragma pack(pop) // Restore default alignment
 
 size_t skip_buffer(const uint8_t **buffer, size_t size, const uint8_t *buffer_end);
 size_t read_from_buffer(const uint8_t **buffer, void *dest, size_t size, const uint8_t *buffer_end);

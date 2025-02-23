@@ -37,10 +37,10 @@ source/main.c)
 
 # Comments this options if gonna build as release
 # Enable sanitizers if supported
-if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(tosparser PRIVATE -fsanitize=address,undefined,leak)
-    target_link_options(tosparser PRIVATE -fsanitize=address,undefined,leak)
-endif()
+# if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+#     target_compile_options(tosparser PRIVATE -fsanitize=address,undefined,leak)
+#     target_link_options(tosparser PRIVATE -fsanitize=address,undefined,leak)
+# endif()
 
 # Link libraries
 if(UNIX)
