@@ -155,6 +155,12 @@ typedef struct
 
 typedef struct
 {
+    char *param_name;
+    char *value;
+} XAC_FXBitmapParameter;
+
+typedef struct
+{
     Vector3 value;
 
     char *name; // Pointer to dynamically allocated string (name[])
@@ -642,11 +648,7 @@ typedef struct
     XAC_FXFloatParameter *float_params; // Pointer to array of XAC_FXFloatParameter[num_float_params]
     XAC_FXColorParameter *color_params; // Pointer to array of XAC_FXColorParameter[num_color_params]
 
-    struct
-    {
-        char *param_name; // Bitmap param name
-        char *value;      // Bitmap value
-    } *bitmap_params;     // Pointer to array of bitmap parameters [num_bitmap_params]
+    XAC_FXBitmapParameter *bitmap_params; // Pointer to array of bitmap parameters [num_bitmap_params]
 
 } XAC_FXMaterial;
 
@@ -681,11 +683,7 @@ typedef struct
     XAC_FXBoolParameter *bool_params;
     XAC_FXVector3Parameter *vector3_params;
 
-    struct
-    {
-        char *param_name;
-        char *value;
-    } *bitmap_params;
+    XAC_FXBitmapParameter *bitmap_params;
 
 } XAC_FXMaterialV2;
 
@@ -720,12 +718,7 @@ typedef struct
     XAC_FXColorParameter *color_params;
     XAC_FXBoolParameter *bool_params;
     XAC_FXVector3Parameter *vector3_params;
-
-    struct
-    {
-        char *param_name;
-        char *value;
-    } *bitmap_params;
+    XAC_FXBitmapParameter *bitmap_params;
 
 } XAC_FXMaterialV3;
 
@@ -836,6 +829,7 @@ typedef struct
     {
         XAC_StandardMaterial version_1;
         XAC_StandardMaterialV2 version_2;
+        XAC_StandardMaterialV3 version_3;
     } xac_standard_material;
 
     union
@@ -1191,11 +1185,6 @@ int parse_xac_std_morph_targets(XAC_Root *root, const uint8_t **buffer, const Ch
 
 int parse_xac_standard_material(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end, uint32_t version)
 {
-    (void)root;
-    (void)buffer;
-    (void)chunk_data;
-    (void)buffer_end;
-
     if (*buffer + chunk_data->size_in_bytes > buffer_end)
     {
         printf("Error: Buffer overflow detected!\n");
@@ -1205,6 +1194,83 @@ int parse_xac_standard_material(XAC_Root *root, const uint8_t **buffer, const Ch
     switch (version)
     {
     case 1:
+        read_from_buffer(buffer, &root->xac_standard_material.version_1.ambient, sizeof(Color), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_1.diffuse, sizeof(Color), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_1.specular, sizeof(Color), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_1.emissive, sizeof(Color), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_1.shine, sizeof(float), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_1.shine_strength, sizeof(float), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_1.opacity, sizeof(float), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_1.ior, sizeof(float), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_1.double_sided, sizeof(uint8_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_1.wireframe, sizeof(uint8_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_1.transparency_type, sizeof(uint8_t), buffer_end);
+        skip_buffer(buffer, 1, buffer_end);
+        read_string(buffer, buffer_end, &root->xac_standard_material.version_1.material_name);
+        break;
+    case 2:
+        read_from_buffer(buffer, &root->xac_standard_material.version_2.ambient, sizeof(Color), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_2.diffuse, sizeof(Color), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_2.specular, sizeof(Color), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_2.emissive, sizeof(Color), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_2.shine, sizeof(float), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_2.shine_strength, sizeof(float), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_2.opacity, sizeof(float), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_2.ior, sizeof(float), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_2.double_sided, sizeof(uint8_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_2.wireframe, sizeof(uint8_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_2.transparency_type, sizeof(uint8_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_2.num_layers, sizeof(uint8_t), buffer_end);
+
+        read_string(buffer, buffer_end, &root->xac_standard_material.version_2.material_name);
+        root->xac_standard_material.version_2.layers = malloc(root->xac_standard_material.version_2.num_layers * sizeof(XAC_StandardMaterialLayerV2));
+        for (uint8_t i = 0; i < root->xac_standard_material.version_2.num_layers; i++)
+        {
+            read_from_buffer(buffer, &root->xac_standard_material.version_2.layers[i].amount, sizeof(float), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_2.layers[i].u_offset, sizeof(float), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_2.layers[i].v_offset, sizeof(float), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_2.layers[i].u_tiling, sizeof(float), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_2.layers[i].v_tiling, sizeof(float), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_2.layers[i].rotation_radians, sizeof(float), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_2.layers[i].material_number, sizeof(uint16_t), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_2.layers[i].map_type, sizeof(uint8_t), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_2.layers[i].blend_mode, sizeof(uint8_t), buffer_end);
+            skip_buffer(buffer, 2, buffer_end);
+            read_string(buffer, buffer_end, &root->xac_standard_material.version_2.layers[i].texture_filename);
+        }
+
+        break;
+    case 3:
+        read_from_buffer(buffer, &root->xac_standard_material.version_3.lod, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_3.ambient, sizeof(Color), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_3.diffuse, sizeof(Color), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_3.specular, sizeof(Color), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_3.emissive, sizeof(Color), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_3.shine, sizeof(float), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_3.shine_strength, sizeof(float), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_3.opacity, sizeof(float), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_3.ior, sizeof(float), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_3.double_sided, sizeof(uint8_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_3.wireframe, sizeof(uint8_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_3.transparency_type, sizeof(uint8_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_standard_material.version_3.num_layers, sizeof(uint8_t), buffer_end);
+
+        read_string(buffer, buffer_end, &root->xac_standard_material.version_3.material_name);
+        root->xac_standard_material.version_3.layers = malloc(root->xac_standard_material.version_3.num_layers * sizeof(XAC_StandardMaterialLayerV2));
+        for (uint8_t i = 0; i < root->xac_standard_material.version_3.num_layers; i++)
+        {
+            read_from_buffer(buffer, &root->xac_standard_material.version_3.layers[i].amount, sizeof(float), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_3.layers[i].u_offset, sizeof(float), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_3.layers[i].v_offset, sizeof(float), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_3.layers[i].u_offset, sizeof(float), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_3.layers[i].v_tiling, sizeof(float), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_3.layers[i].rotation_radians, sizeof(float), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_3.layers[i].material_number, sizeof(uint16_t), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_3.layers[i].map_type, sizeof(uint8_t), buffer_end);
+            read_from_buffer(buffer, &root->xac_standard_material.version_3.layers[i].blend_mode, sizeof(uint8_t), buffer_end);
+            skip_buffer(buffer, 2, buffer_end);
+            read_string(buffer, buffer_end, &root->xac_standard_material.version_3.layers[i].texture_filename);
+        }
         break;
 
     default:
@@ -1241,11 +1307,6 @@ int parse_xac_standard_material_layer(XAC_Root *root, const uint8_t **buffer, co
 
 int parse_xac_fx_material(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end, uint32_t version)
 {
-    (void)root;
-    (void)buffer;
-    (void)chunk_data;
-    (void)buffer_end;
-
     if (*buffer + chunk_data->size_in_bytes > buffer_end)
     {
         printf("Error: Buffer overflow detected!\n");
@@ -1255,8 +1316,132 @@ int parse_xac_fx_material(XAC_Root *root, const uint8_t **buffer, const ChunkDat
     switch (version)
     {
     case 1:
-        break;
+        read_from_buffer(buffer, &root->xac_fx_material.version_1.num_int_params, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_1.num_float_params, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_1.num_color_params, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_1.num_bitmap_params, sizeof(uint32_t), buffer_end);
+        read_string(buffer, buffer_end, &root->xac_fx_material.version_1.name);
+        read_string(buffer, buffer_end, &root->xac_fx_material.version_1.effect_file);
 
+        root->xac_fx_material.version_1.int_params = malloc(root->xac_fx_material.version_1.num_int_params * sizeof(XAC_FXIntParameter));
+        root->xac_fx_material.version_1.float_params = malloc(root->xac_fx_material.version_1.num_float_params * sizeof(XAC_FXFloatParameter));
+        root->xac_fx_material.version_1.color_params = malloc(root->xac_fx_material.version_1.num_color_params * sizeof(XAC_FXColorParameter));
+        root->xac_fx_material.version_1.bitmap_params = malloc(root->xac_fx_material.version_1.num_bitmap_params * sizeof(XAC_FXBitmapParameter));
+
+        for (uint32_t i = 0; i < root->xac_fx_material.version_1.num_int_params; i++)
+        {
+            read_from_buffer(buffer, &root->xac_fx_material.version_1.int_params[i], sizeof(XAC_FXIntParameter), buffer_end);
+        }
+        skip_buffer(buffer, 2, buffer_end);
+
+        for (uint32_t i = 0; i < root->xac_fx_material.version_1.num_float_params; i++)
+        {
+            read_from_buffer(buffer, &root->xac_fx_material.version_1.float_params[i], sizeof(XAC_FXFloatParameter), buffer_end);
+        }
+        for (uint32_t i = 0; i < root->xac_fx_material.version_1.num_color_params; i++)
+        {
+            read_from_buffer(buffer, &root->xac_fx_material.version_1.color_params[i], sizeof(XAC_FXColorParameter), buffer_end);
+        }
+        for (uint32_t i = 0; i < root->xac_fx_material.version_1.num_bitmap_params; i++)
+        {
+            read_string(buffer, buffer_end, &root->xac_fx_material.version_1.bitmap_params[i].param_name);
+            read_string(buffer, buffer_end, &root->xac_fx_material.version_1.bitmap_params[i].value);
+        }
+
+        break;
+    case 2:
+        print_buffer_position(buffer);
+
+        read_from_buffer(buffer, &root->xac_fx_material.version_2.num_int_params, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_2.num_float_params, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_2.num_color_params, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_2.num_bool_params, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_2.num_vector3_params, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_2.num_bitmap_params, sizeof(uint32_t), buffer_end);
+
+        read_string(buffer, buffer_end, &root->xac_fx_material.version_2.name);
+        read_string(buffer, buffer_end, &root->xac_fx_material.version_2.effect_file);
+        read_string(buffer, buffer_end, &root->xac_fx_material.version_2.shader_technique);
+
+        root->xac_fx_material.version_2.int_params = malloc(root->xac_fx_material.version_2.num_int_params * sizeof(XAC_FXIntParameter));
+        root->xac_fx_material.version_2.float_params = malloc(root->xac_fx_material.version_2.num_float_params * sizeof(XAC_FXFloatParameter));
+        root->xac_fx_material.version_2.color_params = malloc(root->xac_fx_material.version_2.num_color_params * sizeof(XAC_FXColorParameter));
+        root->xac_fx_material.version_2.bool_params = malloc(root->xac_fx_material.version_2.num_bool_params * sizeof(XAC_FXBoolParameter));
+        root->xac_fx_material.version_2.vector3_params = malloc(root->xac_fx_material.version_2.num_vector3_params * sizeof(XAC_FXVector3Parameter));
+        root->xac_fx_material.version_2.bitmap_params = malloc(root->xac_fx_material.version_2.num_bitmap_params * sizeof(XAC_FXBitmapParameter));
+
+        for (uint32_t i = 0; i < root->xac_fx_material.version_2.num_int_params; i++)
+        {
+            read_from_buffer(buffer, &root->xac_fx_material.version_2.int_params[i], sizeof(XAC_FXIntParameter), buffer_end);
+        }
+        for (uint32_t i = 0; i < root->xac_fx_material.version_2.num_float_params; i++)
+        {
+            read_from_buffer(buffer, &root->xac_fx_material.version_2.float_params[i], sizeof(XAC_FXFloatParameter), buffer_end);
+        }
+        for (uint32_t i = 0; i < root->xac_fx_material.version_2.num_color_params; i++)
+        {
+            read_from_buffer(buffer, &root->xac_fx_material.version_2.color_params[i], sizeof(XAC_FXColorParameter), buffer_end);
+        }
+        for (uint32_t i = 0; i < root->xac_fx_material.version_2.num_bool_params; i++)
+        {
+            read_from_buffer(buffer, &root->xac_fx_material.version_2.bool_params[i], sizeof(XAC_FXBoolParameter), buffer_end);
+        }
+        for (uint32_t i = 0; i < root->xac_fx_material.version_2.num_vector3_params; i++)
+        {
+            read_from_buffer(buffer, &root->xac_fx_material.version_2.vector3_params[i], sizeof(XAC_FXVector3Parameter), buffer_end);
+        }
+        for (uint32_t i = 0; i < root->xac_fx_material.version_2.num_bitmap_params; i++)
+        {
+            read_string(buffer, buffer_end, &root->xac_fx_material.version_2.bitmap_params[i].param_name);
+            read_string(buffer, buffer_end, &root->xac_fx_material.version_2.bitmap_params[i].value);
+        }
+        break;
+    case 3:
+        read_from_buffer(buffer, &root->xac_fx_material.version_3.lod, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_3.num_int_params, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_3.num_float_params, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_3.num_color_params, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_3.num_bool_params, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_3.num_vector3_params, sizeof(uint32_t), buffer_end);
+        read_from_buffer(buffer, &root->xac_fx_material.version_3.num_bitmap_params, sizeof(uint32_t), buffer_end);
+        skip_buffer(buffer, 4, buffer_end);
+        read_string(buffer, buffer_end, &root->xac_fx_material.version_3.name);
+        read_string(buffer, buffer_end, &root->xac_fx_material.version_3.effect_file);
+        read_string(buffer, buffer_end, &root->xac_fx_material.version_3.shader_technique);
+
+        root->xac_fx_material.version_3.int_params = malloc(root->xac_fx_material.version_3.num_int_params * sizeof(XAC_FXIntParameter));
+        root->xac_fx_material.version_3.float_params = malloc(root->xac_fx_material.version_3.num_float_params * sizeof(XAC_FXFloatParameter));
+        root->xac_fx_material.version_3.color_params = malloc(root->xac_fx_material.version_3.num_color_params * sizeof(XAC_FXColorParameter));
+        root->xac_fx_material.version_3.bool_params = malloc(root->xac_fx_material.version_3.num_bool_params * sizeof(XAC_FXBoolParameter));
+        root->xac_fx_material.version_3.vector3_params = malloc(root->xac_fx_material.version_3.num_vector3_params * sizeof(XAC_FXVector3Parameter));
+        root->xac_fx_material.version_3.bitmap_params = malloc(root->xac_fx_material.version_3.num_bitmap_params * sizeof(XAC_FXBitmapParameter));
+
+        for (uint32_t i = 0; i < root->xac_fx_material.version_3.num_int_params; i++)
+        {
+            read_from_buffer(buffer, &root->xac_fx_material.version_3.int_params[i], sizeof(XAC_FXIntParameter), buffer_end);
+        }
+        for (uint32_t i = 0; i < root->xac_fx_material.version_3.num_float_params; i++)
+        {
+            read_from_buffer(buffer, &root->xac_fx_material.version_3.float_params[i], sizeof(XAC_FXFloatParameter), buffer_end);
+        }
+        for (uint32_t i = 0; i < root->xac_fx_material.version_3.num_color_params; i++)
+        {
+            read_from_buffer(buffer, &root->xac_fx_material.version_3.color_params[i], sizeof(XAC_FXColorParameter), buffer_end);
+        }
+        for (uint32_t i = 0; i < root->xac_fx_material.version_3.num_bool_params; i++)
+        {
+            read_from_buffer(buffer, &root->xac_fx_material.version_3.bool_params[i], sizeof(XAC_FXBoolParameter), buffer_end);
+        }
+        for (uint32_t i = 0; i < root->xac_fx_material.version_3.num_vector3_params; i++)
+        {
+            read_from_buffer(buffer, &root->xac_fx_material.version_3.vector3_params[i], sizeof(XAC_FXVector3Parameter), buffer_end);
+        }
+        for (uint32_t i = 0; i < root->xac_fx_material.version_3.num_bitmap_params; i++)
+        {
+            read_string(buffer, buffer_end, &root->xac_fx_material.version_3.bitmap_params[i].param_name);
+            read_string(buffer, buffer_end, &root->xac_fx_material.version_3.bitmap_params[i].value);
+        }
+        break;
     default:
         printf("Error: Unsupported version %u\n", version);
         return -1;
@@ -1291,11 +1476,6 @@ int parse_xac_limit(XAC_Root *root, const uint8_t **buffer, const ChunkData *chu
 
 int parse_xac_material_info(XAC_Root *root, const uint8_t **buffer, const ChunkData *chunk_data, const uint8_t *buffer_end, uint32_t version)
 {
-    (void)root;
-    (void)buffer;
-    (void)chunk_data;
-    (void)buffer_end;
-
     if (*buffer + chunk_data->size_in_bytes > buffer_end)
     {
         printf("Error: Buffer overflow detected!\n");
@@ -1305,8 +1485,11 @@ int parse_xac_material_info(XAC_Root *root, const uint8_t **buffer, const ChunkD
     switch (version)
     {
     case 1:
+        read_from_buffer(buffer, &root->xac_material_info.version_1, sizeof(XAC_MaterialInfo), buffer_end);
         break;
-
+    case 2:
+        read_from_buffer(buffer, &root->xac_material_info.version_2, sizeof(XAC_MaterialInfo), buffer_end);
+        break;
     default:
         printf("Error: Unsupported version %u\n", version);
         return -1;
@@ -1440,13 +1623,13 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
 
         case XAC_CHUNK_STANDARD_MATERIAL:
         {
-            // if (parse_xac_standard_material(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
-            // {
-            //     return -1;
-            // }
+            if (parse_xac_standard_material(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
+                return -1;
+            }
             root->chunk_data[root->chunk_data_size] = chunk_data;
             root->chunk_data_size += 1;
-            skip_buffer(&buffer, chunk_data.size_in_bytes, buffer_end);
+            // skip_buffer(&buffer, chunk_data.size_in_bytes, buffer_end);
             break;
         }
 
@@ -1464,13 +1647,13 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
 
         case XAC_CHUNK_FX_MATERIAL:
         {
-            // if (parse_xac_fx_material(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
-            // {
-            //     return -1;
-            // }
+            if (parse_xac_fx_material(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
+                return -1;
+            }
             root->chunk_data[root->chunk_data_size] = chunk_data;
             root->chunk_data_size += 1;
-            skip_buffer(&buffer, chunk_data.size_in_bytes, buffer_end);
+            // skip_buffer(&buffer, chunk_data.size_in_bytes, buffer_end);
             break;
         }
 
@@ -1561,13 +1744,13 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
 
         case XAC_CHUNK_MATERIAL_INFO:
         {
-            // if (parse_xac_material_info(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
-            // {
-            //     return -1;
-            // }
+            if (parse_xac_material_info(root, &buffer, &chunk_data, buffer_end, chunk_data.version) != 0)
+            {
+                return -1;
+            }
             root->chunk_data[root->chunk_data_size] = chunk_data;
             root->chunk_data_size += 1;
-            skip_buffer(&buffer, chunk_data.size_in_bytes, buffer_end);
+            // skip_buffer(&buffer, chunk_data.size_in_bytes, buffer_end);
             break;
         }
 
@@ -1611,8 +1794,16 @@ int parse_xac_root(XAC_Root *root, const uint8_t *buffer, size_t buffer_size)
 
         if (buffer != after_chunk)
         {
-            printf("Error: Buffer position mismatch! Expected %p, but got %p\n",
-                   (void *)after_chunk, (void *)buffer);
+            ptrdiff_t diff = (char *)buffer - (char *)after_chunk;
+
+            printf("Error: Buffer position mismatch!\n"
+                   "Expected: 0x%lx (%lu)\n"
+                   "Got:      0x%lx (%lu)\n"
+                   "Difference: %ld bytes (%s)\n",
+                   (unsigned long)(uintptr_t)after_chunk, (unsigned long)(uintptr_t)after_chunk,
+                   (unsigned long)(uintptr_t)buffer, (unsigned long)(uintptr_t)buffer,
+                   (long)diff, diff > 0 ? "moved forward (+)" : "moved backward (-)");
+
             return -1;
         }
     }

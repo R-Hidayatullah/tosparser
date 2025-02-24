@@ -151,9 +151,17 @@ typedef struct
     // uint8 buffer_data[num_bytes];
 } AttributeData;
 
+void print_buffer_position(void *buffer);
 size_t skip_buffer(const uint8_t **buffer, size_t size, const uint8_t *buffer_end);
 size_t read_from_buffer(const uint8_t **buffer, void *dest, size_t size, const uint8_t *buffer_end);
 int read_string(const uint8_t **buffer, const uint8_t *buffer_end, char **result_text);
+
+void print_buffer_position(void *buffer)
+{
+    printf("Buffer position: Hex: %p, Integer: %llu\n",
+           buffer,
+           (unsigned long long)(uintptr_t)buffer);
+}
 
 size_t skip_buffer(const uint8_t **buffer, size_t size, const uint8_t *buffer_end)
 {

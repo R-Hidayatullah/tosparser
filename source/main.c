@@ -61,6 +61,15 @@ int main(void)
         return EXIT_FAILURE;
     }
 
+    // Move the file pointer to the end to get file size
+    fseek(ipf_file, 0, SEEK_END);
+    long file_size = ftell(ipf_file);
+    rewind(ipf_file); // Reset file pointer to the beginning
+
+    // Print filename and size
+    printf("Filename: %s\n", filename);
+    printf("File Size: %ld bytes\n\n", file_size);
+
     IPF_Root ipf_root = {0}; // Initialize IPF_Root structure to zero
     XAC_Root xac_root = {0}; // Initialize XAC_Root structure to zero
 
@@ -97,7 +106,7 @@ int main(void)
             save_extracted_data(output_filename, extracted_data, extracted_size);
 
             printf("Extraction successful.\n");
-
+            print_buffer_position(extracted_data);
             // Print a hex dump of the first 16 bytes of the extracted file
             print_hex_dump(extracted_data, 16, 4);
             if (extracted_data && extracted_size >= 4)
